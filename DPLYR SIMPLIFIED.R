@@ -86,3 +86,14 @@ gapminder %>% group_by(country) %>% summarise(mean(lifeExp))
 # 3 Algeria                59.0
 # 4 Angola                 37.9
 # 5 Argentina              69.1
+
+# we can group_by multiple vsriables as well
+gapminder %>% group_by(year,continent) %>% summarise (mean(lifeExp))
+#     year continent `mean(lifeExp)`
+#   <int> <fct>               <dbl>
+#1  1952 Africa               39.1
+#2  1952 Americas             53.3
+#3  1952 Asia                 46.3
+#4  1952 Europe               64.4
+#5  1952 Oceania              69.3
+#6  1957 Africa               41.3
