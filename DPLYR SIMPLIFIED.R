@@ -21,6 +21,35 @@ gapminder
 gapminder %>% select(year,country)
 # prints a new df with year and country columns
 
+gapminder %>% select(year:pop)
+
+gapminder %>% select(contains("p"))
+#   lifeExp     pop gdpPercap
+#    <dbl>    <int>     <dbl>
+#1    28.8  8425333      779.
+#2    30.3  9240934      821.
+#3    32.0 10267083      853.
+
+gapminder %>% select(starts_with("c"))
+#   country     continent
+#   <fct>       <fct>    
+#1 Afghanistan Asia     
+#2 Afghanistan Asia     
+#3 Afghanistan Asia     
+
+gapminder%>% select(last_col())
+#   gdpPercap
+#      <dbl>
+#1      779.
+#2      821.
+
+gapminder %>% select(-(continent:pop))
+#   country     gdpPercap
+#  <fct>           <dbl>
+#1 Afghanistan      779.
+#2 Afghanistan      821.
+#3 Afghanistan      853.
+
 
 
 ###### "FILTER" VERB
@@ -77,7 +106,7 @@ gapminder %>% summarise(mean(lifeExp))
 gapminder %>% summarise(mean(lifeExp))
 # [1] 59.5
 
-gapminder %>% group_by(country) %>% summarise(mean(lifeExp))
+gapminder %>% group_by(country) %>% summarise(mean(lifeExp)) %>% ungroup()
 # A tibble: 142 x 2
 # country     `mean(lifeExp)`
 # <fct>                 <dbl>
@@ -88,7 +117,7 @@ gapminder %>% group_by(country) %>% summarise(mean(lifeExp))
 # 5 Argentina              69.1
 
 # we can group_by multiple vsriables as well
-gapminder %>% group_by(year,continent) %>% summarise (mean(lifeExp))
+gapminder %>% group_by(year,continent) %>% summarise (mean(lifeExp)) %>% ungroup()
 #     year continent `mean(lifeExp)`
 #   <int> <fct>               <dbl>
 #1  1952 Africa               39.1
@@ -97,3 +126,101 @@ gapminder %>% group_by(year,continent) %>% summarise (mean(lifeExp))
 #4  1952 Europe               64.4
 #5  1952 Oceania              69.3
 #6  1957 Africa               41.3
+# ....
+
+# when you use group_by with summarise, there is no addition of new column
+# for that purpose, we use group_by + mutate
+
+
+
+##### "COUNT" VERB
+
+gapminder %>% count(continent)
+#  continent     n
+#   <fct>     <int>
+#1 Africa      624
+#2 Americas    300
+#3 Asia        396
+#4 Europe      360
+#5 Oceania      24
+
+gapminder %>% count(continent, sort=TRUE)
+#  continent     n
+#  <fct>     <int>
+#1 Africa      624
+#2 Asia        396
+#3 Europe      360
+#4 Americas    300
+#5 Oceania      24
+
+gapminder %>% count(continent,wt=pop, sort=TRUE)
+# continent           n
+#  <fct>           <dbl>
+#1 Asia      30507333901
+#2 Americas   7351438499
+#3 Africa     6187585961
+#4 Europe     6181115304
+#5 Oceania     212992136
+
+
+####### "TOP_N" VERB
+# returns the exreme observations
+
+gapminder %>% top_n(1,pop)
+# 1 China   Asia       2007    73.0 1318683096     4959.
+
+gapminder %>% group_by(year) %>% summarise(total_pop=sum(pop)) %>% top_n(3,total_pop)
+#    year  total_pop
+#   <int>      <dbl>
+#1  1997 5515204472
+#2  2002 5886977579
+#3  2007 6251013179
+
+gapminder %>% group_by(continent) %>% top_n(1,lifeExp)
+#  country   continent  year lifeExp       pop gdpPercap
+#   <fct>     <fct>     <int>   <dbl>     <int>     <dbl>
+#1 Australia Oceania    2007    81.2  20434176    34435.
+#2 Canada    Americas   2007    80.7  33390141    36319.
+#3 Iceland   Europe     2007    81.8    301931    36181.
+#4 Japan     Asia       2007    82.6 127467972    31656.
+#5 Reunion   Africa     2007    76.4    798094     7670.
+
+
+
+##### "RENAME" VERB
+# it is used to rename columns
+
+gapminder %>% rename(GDP_percap = gdpPercap)
+# country     continent   year   lifeExp      pop    GDP_percap
+
+gapminder %>% select( country, continent, year, GDP_percap = gdpPercap)
+# renaming inside the select verb
+
+
+
+###### "TRANSMUTE" VERB
+# it is a combination of select and mutate
+
+gapminder %>% transmute(country, continent,total_GDP = gdpPercap*pop/1000000)
+# country     continent   total_GDP
+#  <fct>       <fct>         <dbl>
+#1 Afghanistan Asia          6567.
+#2 Afghanistan Asia          7585.
+#3 Afghanistan Asia          8759.
+
+
+######## "WINDOW" FUNCTION
+
+v<- c(1,3,6,14)
+# [1]  1  3  6 14
+lag(v)
+# [1] NA  1  3  6
+
+
+gapminder_fraction <- gapminder %>% filter(continent=="Asia") %>% group_by(year) %>%
+  mutate(gdp_total=sum(gdpPercap)) %>% ungroup() %>% mutate(gdp_fraction = gdpPercap/gdp_total) %>%
+  mutate(cons_diff = gdp_fraction-lag(gdp_fraction))
+gapminder_fraction
+
+library(ggplot2)
+ggplot(gapminder_fraction,aes(x=year,y=cons_diff,colour=country)) +geom_line()
